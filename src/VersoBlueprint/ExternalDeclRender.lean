@@ -557,6 +557,11 @@ private def renderExternalDeclHeaderMeta
   | _ => pure ()
   return items
 
+register_option verso.blueprint.externalCode.structureConstructors : Bool := {
+  defValue := false
+  descr := "Show structure and class constructors in external declaration panels"
+}
+
 private def renderDeclHtmlDocstringFromInfoE
     (decl : Name) (cinfo : ConstantInfo)
     (headerBadge? : Option ExternalDeclHeaderBadge := none)
@@ -565,7 +570,9 @@ private def renderDeclHtmlDocstringFromInfoE
   let env ← getEnv
   let declType ←
     withOptions (verso.docstring.allowMissing.set · true) <|
-      Verso.Genre.Manual.Block.Docstring.DeclType.ofName decl (hideStructureConstructor := true)
+      Verso.Genre.Manual.Block.Docstring.DeclType.ofName decl
+        (hideStructureConstructor :=
+          !verso.blueprint.externalCode.structureConstructors.get (← getOptions))
   let signature ← Verso.Genre.Manual.Signature.forName decl
   let texPrelude ← Informal.Macros.getTexPrelude
   let docstring ← docstringHtmlForDecl env decl none texPrelude

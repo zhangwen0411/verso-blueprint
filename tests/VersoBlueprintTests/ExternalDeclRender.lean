@@ -382,4 +382,21 @@ private def htmlTestContext :
       after.hoverPayloads.size > 0 && snapshotHasSource &&
       duplicateRejected && theoremRejected
 
+-- Structure constructors are hidden by default and rendered natively when requested.
+/-- info: true -/
+#guard_msgs in
+#eval
+  show Lean.CoreM Bool from do
+    let name := `Verso.VersoBlueprintTests.ExternalDeclRender.sameModuleRenderPackage
+    let some hidden ← (Informal.renderDeclHtmlNodeDirect? name).run' | return false
+    let some shown ← withOptions
+        (Informal.verso.blueprint.externalCode.structureConstructors.set · true) <|
+      (Informal.renderDeclHtmlNodeDirect? name).run' | return false
+    let hidden := hidden.asString
+    let shown := shown.asString
+    pure <| !hidden.contains "sameModuleRenderPackage.mk" && !hidden.contains "Constructor" &&
+      shown.contains "Constructor</p>" && shown.contains "sameModuleRenderPackage.mk" &&
+      shown.contains "<pre class=\"name-and-type hl lean\">" &&
+      shown.contains "The first value in the package."
+
 end Verso.VersoBlueprintTests.ExternalDeclRender

@@ -2100,3 +2100,9 @@ disabled. Tokens in dynamically opened previews use delegated tooltips with the
 same page/cache hover IDs; inserted docstrings render as prose too. Unregistered
 declarations render exactly as before; this feature does
 not extract or print compiled values and does not change reference serialization.
+
+### Structure constructors in declaration panels
+
+Panels list a structure's fields and hide its constructor. Set
+`verso.blueprint.externalCode.structureConstructors` to `true` where associations are elaborated
+to also render the constructor natively, as for inductive constructors.
