@@ -1562,6 +1562,26 @@ a.bp_external_decl_source_path:hover {
   word-break: break-word;
 }
 
+/* Registered source uses the same wrapping in panels and cached previews. */
+.bp_external_decl_rendered .bp_external_decl_source_code.hl.lean {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.bp_external_decl_source_code .token {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .bp_external_decl_rendered .bp_external_decl_body:empty {
   display: none;
 }
@@ -1839,7 +1859,8 @@ def codeAssetBundle : Informal.Commands.BlueprintAssetBundle :=
 def blockAssetBundle : Informal.Commands.BlueprintAssetBundle :=
   Informal.Commands.previewPanelInlinePreviewAssetBundle
     (cssExtras := [css, Informal.StyleSwitcher.css, Verso.Genre.Manual.docstringStyle])
-    (jsAfter := [Informal.Macros.blueprintMathJs, Informal.StyleSwitcher.jsInteractive])
+    (jsAfter := [Informal.Macros.blueprintMathJs, Informal.StyleSwitcher.jsInteractive,
+      include_str "declaration-source.js"])
 
 def codeCssAssets : List String :=
   codeAssetBundle.css

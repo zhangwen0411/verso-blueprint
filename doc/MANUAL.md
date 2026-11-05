@@ -2084,3 +2084,19 @@ wants to use it.
   external Rust symbol references
 - some rendering details and summary ranking policies are still expected to
   evolve
+
+### Optional declaration source
+
+Clients may import `VersoBlueprint.ExternalDeclSource` and call
+`Informal.registerExternalDeclSource` with a canonical declaration name and an
+`ExternalDeclSource` (SubVerso-highlighted `code` and a `provenance` string).
+Register before elaborating the declaration association: panels and previews use
+snapshots taken at association time. Clients own source extraction, doc-comment
+removal and freshness checks. Theorems and proof-valued declarations are rejected.
+
+Registered source appears in a “Definition” section below the generated signature
+and prose docstring, including in declaration previews. Tactic-state widgets are
+disabled. Tokens in dynamically opened previews use delegated tooltips with the
+same page/cache hover IDs; inserted docstrings render as prose too. Unregistered
+declarations render exactly as before; this feature does
+not extract or print compiled values and does not change reference serialization.

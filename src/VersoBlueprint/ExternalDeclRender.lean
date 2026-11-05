@@ -7,6 +7,7 @@ Author: Emilio J. Gallego Arias
 import Lean
 import Verso
 import VersoManual
+import VersoBlueprint.ExternalDeclSource
 import VersoBlueprint.Docstring
 import VersoBlueprint.Lib.HtmlId
 import VersoBlueprint.Macros
@@ -616,6 +617,18 @@ private def renderDeclHtmlDocstringFromInfoE
       sections := sections.push s
     if let some s := inductiveCtorsSection? then
       sections := sections.push s
+
+    if let some source := externalDeclSource? env decl then
+      let sourceHtml ← runHighlightedHtml <|
+        withReader (fun ctx => { ctx with
+          options.inlineProofStates := false
+          options.definitionsAsTargets := false }) <|
+          source.code.toHtml (g := Verso.Genre.Manual)
+      let sourceBlock := {{
+        <pre class="bp_external_decl_source_code hl lean block"><span>{{sourceHtml}}</span></pre>
+      }}
+      if let some sourceSection := renderTitledSection? decl "Definition" #[sourceBlock] then
+        sections := sections.push sourceSection
 
     let presentation := externalDeclPresentation declType cinfo
     let signatureHtml ← signatureToHtml presentation.keywordText signature

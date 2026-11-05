@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Emilio J. Gallego Arias
 -/
 
+import VersoBlueprintTests.ExternalDeclSourceProvider
 import VersoBlueprint.ExternalRefSnapshot
 import VersoBlueprint.Informal.ExternalCode
 
@@ -315,5 +316,70 @@ private def htmlTestContext :
       (match missing.render with
       | .error _ => true
       | .ok _ => false)
+
+
+/-- info: true -/
+#guard_msgs in
+#eval
+  show Lean.CoreM Bool from do
+    let name := `Verso.VersoBlueprintTests.ExternalDeclSourceProvider.value
+    let some source := Informal.externalDeclSource? (← getEnv) name | return false
+    let some rendered ← (Informal.renderDeclHtmlNodeDirect? name).run' | return false
+    let proofRejected ← try
+        (Informal.registerExternalDeclSource
+          `Verso.VersoBlueprintTests.ExternalDeclSourceProvider.proofValue source).run'
+        pure false
+      catch _ => pure true
+    let opaqueRejected ← try
+        (Informal.registerExternalDeclSource
+          `Verso.VersoBlueprintTests.ExternalDeclSourceProvider.opaqueProof source).run'
+        pure false
+      catch _ => pure true
+    pure <| source.code.toString == "def value : Nat := 7" &&
+      source.provenance == "ExternalDeclSourceProvider.lean" &&
+      rendered.asString.contains "Documentation stays outside the registered source." &&
+      rendered.asString.contains "bp_external_decl_source_code" && proofRejected && opaqueRejected
+
+-- Source is opt-in, is captured in snapshots, and shares signature hover payloads.
+/-- info: true -/
+#guard_msgs in
+#eval
+  show Lean.CoreM Bool from do
+    let name := `Verso.VersoBlueprintTests.ExternalDeclRender.sameModuleRenderDef
+    let before ← (Informal.renderDeclHtmlNodeDirect? name).run'
+    let unrelated ← (Informal.renderDeclHtmlNodeDirect? `Nat.add).run'
+    let signature ← (show Lean.MetaM _ from
+      Verso.Genre.Manual.Signature.forName `Nat.succ).run'
+    let source : Informal.ExternalDeclSource := {
+      code := .seq #[.text "def example := ", signature.wide]
+      provenance := "fixture.lean:1" }
+    (Informal.registerExternalDeclSource name source).run'
+    let some info := (← getEnv).find? name | return false
+    let .ok after ← (Informal.renderDeclHtmlDirectFromInfoE name info).run'
+      | return false
+    let unrelatedAfter ← (Informal.renderDeclHtmlNodeDirect? `Nat.add).run'
+    let duplicateRejected ← try
+        (Informal.registerExternalDeclSource name source).run'
+        pure false
+      catch _ => pure true
+    let theoremRejected ← try
+        (Informal.registerExternalDeclSource
+          `Verso.VersoBlueprintTests.ExternalDeclRender.sameModuleRenderThm source).run'
+        pure false
+      catch _ => pure true
+    let snap ← Informal.externalRefSnapshotAtCurrentDir (← getOptions)
+      (Informal.Data.ExternalRef.ofName name)
+    let snapshotHasSource := match snap.render with
+      | .ok rendered => rendered.html.contains "bp_external_decl_source_code"
+      | _ => false
+    pure <| before.isSome &&
+      !(before.get!.asString.contains "bp_external_decl_source_code") &&
+      unrelated.map (·.asString) == unrelatedAfter.map (·.asString) &&
+      after.html.contains "bp_external_decl_signature" &&
+      after.html.contains "bp_external_decl_source_code hl lean block" &&
+      after.html.contains "Definition</p>" &&
+      after.html.contains "def example := " &&
+      after.hoverPayloads.size > 0 && snapshotHasSource &&
+      duplicateRejected && theoremRejected
 
 end Verso.VersoBlueprintTests.ExternalDeclRender

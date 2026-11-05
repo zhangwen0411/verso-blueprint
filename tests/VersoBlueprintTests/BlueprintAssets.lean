@@ -79,7 +79,8 @@ namespace Verso.VersoBlueprintTests.BlueprintAssets
         Informal.Block.Assets.css, Informal.StyleSwitcher.css, Verso.Genre.Manual.docstringStyle,
         Informal.Commands.previewHeaderCss, Informal.Commands.inlinePreviewCss] &&
     Informal.Block.Assets.blockAssetBundle.js ==
-      [Informal.Macros.blueprintMathJs, Informal.StyleSwitcher.jsInteractive]
+      [Informal.Macros.blueprintMathJs, Informal.StyleSwitcher.jsInteractive,
+        include_str "../../src/VersoBlueprint/Informal/Block/declaration-source.js"]
 
 /-- info: true -/
 #guard_msgs in
