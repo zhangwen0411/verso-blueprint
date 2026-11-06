@@ -50,6 +50,7 @@ structure PanelEntry where
   previewId : String
   previewKey : Option Informal.PreviewKey := none
   previewTitle : String
+  displayLabel? : Option String := none
   label : Data.Label
   href : Option String := none
   dependencies : Array Relation.Dependency := #[]
@@ -141,9 +142,12 @@ def proofUsesPanelConfig (sourceLabel : Data.Label) : PanelConfig :=
 
 /-- Standard forward-dependency panel presentation for a concrete informal block. -/
 def usesPanelConfigForBlock (data : BlockData) : PanelConfig :=
-  match data.isProof with
-  | true => proofUsesPanelConfig data.label
-  | false => statementUsesPanelConfig data.label
+  let cfg := if data.isProof then proofUsesPanelConfig data.label else statementUsesPanelConfig data.label
+  match data.displayIdentity with
+  | none => cfg
+  | some identity =>
+    let facet := if data.isProof then "Proof" else "Statement"
+    { cfg with chipTitle := fun _ => s!"{facet} dependencies of {identity}" }
 
 private def groupChipClass (declared : Bool) : String :=
   if declared then
@@ -480,6 +484,7 @@ private def mkEntry
   previewId
   previewKey := reference.previewKey
   previewTitle := reference.title
+  displayLabel? := reference.headerLabel?
   label
   href := reference.href
   dependencies
@@ -539,7 +544,7 @@ private def panelEntryDataHtml (renderPreview : PreviewResources.Render)
     | none => scriptJson Json.null
     | some key => renderPreview key (fun _ => scriptJson (.str key.value))
         (fun _ => scriptJson Json.null),
-    scriptJson (.str s!"{entry.label}"),
+    scriptJson (.str (entry.displayLabel?.getD s!"{entry.label}")),
     scriptJson (optionStringJson entry.href),
     scriptJson (toJson entry.badgeCodes),
     scriptJson (toJson (panelEntryActive selectedEntry? entry))
@@ -555,7 +560,7 @@ def renderPanel (cfg : PanelConfig) (entries : Array PanelEntry)
   let renderInlinePreview (entry : PanelEntry) : Output.Html :=
     let chipNode : Output.Html :=
       if let some href := entry.href then
-        {{<a class={{s!"{cfg.chipClass} bp_code_link"}} href={{href}} title={{cfg.singleTitle entry}}>
+        {{<a class={{s!"{cfg.chipClass} bp_code_link"}} href={{href}} title={{entry.displayLabel?.getD (cfg.singleTitle entry)}}>
             {{.text true (cfg.chipText 1)}}
           </a>}}
       else
@@ -566,7 +571,7 @@ def renderPanel (cfg : PanelConfig) (entries : Array PanelEntry)
     Informal.HoverRender.inlinePreviewNode
       chipNode entry.previewId entry.previewTitle
       (previewLookupKey? := entry.previewKey.map (toString ·))
-      (previewHeaderLabel? := some s!"{entry.label}")
+      (previewHeaderLabel? := some (entry.displayLabel?.getD s!"{entry.label}"))
       (previewHeaderHref? := entry.href)
       (previewFooterHtml? := previewFooterHtml?)
   if entries.isEmpty then
@@ -643,7 +648,11 @@ def usesEntries (state : TraverseState) (data : BlockData)
 def renderUsedByExtra (state : TraverseState) (data : BlockData)
     (renderPreview : PreviewResources.Render := PreviewResources.immediate) : Output.Html :=
   if data.isProof then .empty else
-    renderPanel (usedByPanelConfig (some data.label)) (usedByEntries state data) renderPreview
+    let cfg := usedByPanelConfig (some data.label)
+    let cfg := match data.displayIdentity with
+      | some identity => { cfg with chipTitle := fun _ => s!"Used by {identity}" }
+      | none => cfg
+    renderPanel cfg (usedByEntries state data) renderPreview
 
 /-- Render the selected facet's dependency panel using the shared projection. -/
 def renderUsesExtra (state : TraverseState) (data : BlockData)

@@ -115,6 +115,8 @@ private def RenderingResolution.Reference.withPreview
   | some key =>
       let id := s!"bp-uses-{HoverRender.previewKey (toString key)}"
       let target := HoverRender.InlinePreviewTarget.withLookupKey id reference.title (toString key)
+      let target := if reference.headerLabel?.isSome then
+        { target with headerLabel? := reference.headerLabel?, headerHref? := reference.href } else target
       HoverRender.inlinePreviewTargetNode node target
 
 open Verso.Doc.Html Verso.Output.Html in
@@ -129,7 +131,7 @@ private def informalReferenceToHtml (renderPreview : PreviewResources.Render := 
       let some reference ← ExtensionDecode.report? (RenderingResolution.reference (← HtmlT.state) label)
         | pure .empty
       let content ← if inlines.isEmpty then pure #[.text true reference.title] else inlines.mapM goI
-      let labelText := label.toString (escape := false)
+      let labelText := reference.headerLabel?.getD (label.toString (escape := false))
       let node := match reference.href with
         | some href => {{<a href={{href}} title={{labelText}}>{{content}}</a>}}
         | none => {{<span title={{labelText}}>{{content}}</span>}}

@@ -35,6 +35,7 @@ def RelatedEntry.panelEntry
     previewId := Informal.HoverRender.previewId idPrefix entry.displayLabel
     previewKey := entry.previewKey
     previewTitle := entry.displayTitle
+    displayLabel? := entry.displayLabel?
     label := entry.label
     href := entry.href
     dependencies := entry.dependencies

@@ -87,6 +87,7 @@ open Verso.Multi (AllRemotes)
 abbrev SummaryHtmlM := HtmlT Manual (ReaderT AllRemotes (ReaderT ExtensionImpls (BuildLogT IO)))
 
 structure SummaryHtmlContext where
+  entryTitle? : Name → Option String := fun _ => none
   entryHref? : Name → Option String
   declHref? : Name → Name → Option String
   declPreviewLookupKey? : Name → Name → Option String
@@ -132,10 +133,13 @@ private def summaryRenderLeanDeclLink (target : Name) (node : Output.Html)
 private def SummaryHtmlContext.entryRef (ctx : SummaryHtmlContext) (label : Name) : Output.Html :=
   let previewLookupKey? := ctx.previewLookupKey? label
   let previewLabel? : Option Name := previewLookupKey?.map (fun _ => label)
+  let title? := ctx.entryTitle? label
+  let text := title?.getD s!"{label}"
   let labelNode : Output.Html :=
-    match ctx.entryHref? label with
-    | Option.some href => {{ <a href={{href}}> <code>s!"{label}"</code> </a> }}
-    | Option.none => {{ <code>s!"{label}"</code> }}
+    match ctx.entryHref? label, title? with
+    | some href, some title => {{ <a href={{href}} title={{title}}> <code>{{.text true text}}</code> </a> }}
+    | some href, Option.none => {{ <a href={{href}}> <code>s!"{label}"</code> </a> }}
+    | Option.none, _ => {{ <code>{{.text true text}}</code> }}
   Informal.HoverRender.summaryPreviewWrap labelNode previewLabel? previewLookupKey?
 
 private def SummaryHtmlContext.declItems (ctx : SummaryHtmlContext) (label : Name)

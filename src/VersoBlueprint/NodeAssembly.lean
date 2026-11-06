@@ -68,6 +68,9 @@ private def mergeContribution (label : Label) (node : Node)
     if externalMarkup.contains key then
       conflict s!"Label {label} already has associated {key.language} external markup in slot '{key.slot}'"
     else externalMarkup := externalMarkup.insert markup
+  if node.displayIdentity.isSome && incoming.displayIdentity.isSome then
+    conflict s!"Label {label} already has a display identity"
+  let displayIdentity := node.displayIdentity <|> incoming.displayIdentity
   let parent ← mergeMetadata label "parents" node.parent incoming.parent
   let owner ← mergeMetadata label "owners" node.owner incoming.owner
   let effort ← mergeMetadata label "effort values" node.effort incoming.effort
@@ -83,7 +86,7 @@ private def mergeContribution (label : Label) (node : Node)
     | none => pure <| if node.kindIsExplicit then node.kind else
         inferredNodeKind (ExternalRef.mergeSnapshots node.externalRefs node.proofExternalRefs) literateCodes
   return { node with
-    kind, kindIsExplicit
+    kind, kindIsExplicit, displayIdentity
     count := if node.count == 0 then incoming.count else node.count
     statement, proof, rustCode, externalMarkup, parent, owner, effort, prUrl, issueUrl
     literateCodes

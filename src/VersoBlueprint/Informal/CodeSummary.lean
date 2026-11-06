@@ -332,12 +332,12 @@ private def renderCodeSummaryPreview (previewTitle : String) (trigger : Output.H
 
 private def renderCodeEntryWrap (href : Option String) (title previewTitle : String)
     (previewBody : Output.Html) (visual : CodeEntryVisual)
-    (renderHealth : ExternalRenderHealth := {}) : Output.Html :=
+    (renderHealth : ExternalRenderHealth := {}) (ariaLabel? : Option String := none) : Output.Html :=
   renderCodeSummaryPreview previewTitle
     (renderCodeEntryNode href title visual renderHealth)
     previewBody
     (focusable := href.isNone)
-    (ariaLabel? := if href.isNone then some title else none)
+    (ariaLabel? := ariaLabel? <|> if href.isNone then some title else none)
 
 /-- Axis wording follows the same semantic evidence as the completion mark.
 Zero observed reference counts cannot establish verified coverage. -/
@@ -432,13 +432,13 @@ private def codeSummaryText (label : Data.Label)
         String.intercalate ", " (sorries.toList.map fun item => s!"{item.displayName} [{declSummaryStatusText item}]")
     s!"{label}\nLean definitions: {defs}\nLean theorems/lemmas: {thms}\nIncomplete declarations: {sorriesTxt}"
 
-private def wrapPanelIndicator (label : Data.Label) (summaryTitle : String)
+private def wrapPanelIndicator (previewTitle : String) (summaryTitle : String)
     (node previewBody : Output.Html) : Output.Html :=
   open Verso.Output.Html in
   {{
     <span class="bp_code_summary_indicator">
       {{renderCodeSummaryPreview
-        s!"{label}"
+        previewTitle
         node
         previewBody
         (focusable := true)
@@ -447,13 +447,15 @@ private def wrapPanelIndicator (label : Data.Label) (summaryTitle : String)
   }}
 
 private def renderInlinePanelIndicator (label : Data.Label) (cdata : ComputedData)
-    (hrefOf : Name → Option String) : PanelIndicatorParts :=
+    (hrefOf : Name → Option String) (display? : Option NodeDisplay := none) : PanelIndicatorParts :=
   open Verso.Output.Html in
   let codeData := (cdata.source.getD {}).literateDeclarations
   let orderedDecls := if cdata.inlineBlocks.isEmpty then codeData.declarations else
     cdata.inlineBlocks.flatMap fun block => sortDeclsByCommand block.declarations
   let previewBody := renderSummaryPreview cdata hrefOf
-  let summaryTitle := s!"Lean code for {label}: {codeSummaryText label codeData.definedDefs codeData.definedTheorems}"
+  let identity? := display?.bind (·.identity?)
+  let summaryTitle := identity?.map (s!"Lean code for {·}") |>.getD
+    s!"Lean code for {label}: {codeSummaryText label codeData.definedDefs codeData.definedTheorems}"
   let indicator : Output.Html :=
     if orderedDecls.isEmpty then
       .empty
@@ -475,7 +477,7 @@ private def renderInlinePanelIndicator (label : Data.Label) (cdata : ComputedDat
           <span class={{cls}} title={{title}} style={{s!"flex: {weight} 1 0%"}}></span>
         }}
       let bar := {{<span class="bp_code_progress" aria-label="Lean declaration progress">{{segments}}</span>}}
-      wrapPanelIndicator label summaryTitle bar previewBody
+      wrapPanelIndicator (identity?.getD s!"{label}") summaryTitle bar previewBody
   {
     summaryTitle
     indicator
@@ -559,13 +561,14 @@ private def externalIndicatorPresentation
     }
 
 private def renderExternalPanelIndicator (decls : Array Data.ExternalRef)
-    (label : Data.Label) (hrefOf : Name → Option String) : PanelIndicatorParts :=
+    (label : Data.Label) (hrefOf : Name → Option String) (display? : Option NodeDisplay := none) : PanelIndicatorParts :=
   open Verso.Output.Html in
   let health := Informal.Graph.codeHealthOfBlockSource .definition {} (some { externalDecls := decls })
   let renderHealth := externalRenderHealth decls
   let previewBody := renderSummaryPreview { source := some { externalDecls := decls } } hrefOf
   let presentation := externalIndicatorPresentation decls health
-  let summaryTitle :=
+  let identity? := display?.bind (·.identity?)
+  let summaryTitle := identity?.map (s!"Lean code for {·}") |>.getD <|
     s!"Lean code for {label}: " ++ appendRenderHealthSummary
       (externalCodeEntryTitle health.presentDecls health.totalDecls health.missingDecls health.anyGapCount)
       renderHealth
@@ -579,7 +582,7 @@ private def renderExternalPanelIndicator (decls : Array Data.ExternalRef)
   }}
   {
     summaryTitle
-    indicator := wrapPanelIndicator label summaryTitle badge previewBody
+    indicator := wrapPanelIndicator (identity?.getD s!"{label}") summaryTitle badge previewBody
   }
 
 /--
@@ -590,15 +593,16 @@ indicator for now, but both paths share the same normalized declaration summary 
 for hover content.
 -/
 def renderPanelIndicator (label : Data.Label) (cdata : ComputedData)
-    (hrefOf : Name → Option String) : PanelIndicatorParts :=
+    (hrefOf : Name → Option String) (display? : Option NodeDisplay := none) : PanelIndicatorParts :=
   match cdata.source with
   | none => { summaryTitle := s!"Lean code for {label}: no associated Lean declarations" }
   | some source =>
-    let inlinePanel := renderInlinePanelIndicator label cdata hrefOf
-    let externalPanel := renderExternalPanelIndicator source.externalDecls label hrefOf
+    let inlinePanel := renderInlinePanelIndicator label cdata hrefOf display?
+    let externalPanel := renderExternalPanelIndicator source.externalDecls label hrefOf display?
     if source.literateDeclarations.isEmpty then externalPanel else
     if source.externalDecls.isEmpty then inlinePanel else
-      { summaryTitle := inlinePanel.summaryTitle ++ "\n" ++ externalPanel.summaryTitle
+      { summaryTitle := (display?.bind (·.identity?)).map (s!"Lean code for {·}")
+          |>.getD (inlinePanel.summaryTitle ++ "\n" ++ externalPanel.summaryTitle)
         indicator := .seq #[inlinePanel.indicator, externalPanel.indicator] }
 
 /-- Heading status and tooltip cover every association, independent of panel layout. -/
@@ -613,8 +617,11 @@ def renderParts (data : BlockData) (cdata : ComputedData) (hrefOf : Name → Opt
       (externalCodeEntryTitle health.presentDecls health.totalDecls health.missingDecls health.anyGapCount)
       renderHealth
   { statusMark := if source.isEmpty then none else some statusMark
-    codeEntry := renderCodeEntryWrap cdata.codeHref title s!"{data.label}"
-      (renderSummaryPreview cdata hrefOf) (codeEntryVisual (!source.isEmpty) statusMark) renderHealth }
+    codeEntry := renderCodeEntryWrap cdata.codeHref
+      ((data.displayIdentity.map (s!"Lean code for {·}")).getD title)
+      (data.displayIdentity.getD s!"{data.label}")
+      (renderSummaryPreview cdata hrefOf) (codeEntryVisual (!source.isEmpty) statusMark) renderHealth
+      (ariaLabel? := data.displayIdentity.map (s!"Lean code for {·}")) }
 
 end CodeSummary
 end Informal

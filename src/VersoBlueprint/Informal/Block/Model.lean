@@ -214,6 +214,8 @@ def BlockCodeData.summaryLiterateDeclarations (code : BlockCodeData) : LiterateD
 
 /-- Shared semantic metadata; occurrence numbering, sources, and folding live separately. -/
 structure BlockMetadata where
+  /-- Optional reader identity, replacing the generated kind and number in presentation. -/
+  displayIdentity : Option String := none
   /-- Canonical target label: informal label, Lean declaration name, citation label, or external-markup witness label. -/
   label : Data.Label
   /-- Parent/group label for this informal node, if any. -/
@@ -328,6 +330,7 @@ def RenderNode.ofNode (label : Data.Label) (node : Data.Node)
     (author : Option Data.AuthorInfo := none) : RenderNode := {
   label
   kind := node.kind
+  displayIdentity := node.displayIdentity
   initialCount := node.count
   externalRefs := node.externalRefs
   proofExternalRefs := node.proofExternalRefs
@@ -386,9 +389,10 @@ structure NodeDisplay where
   label : Data.Label
   kind : Data.NodeKind
   number? : Option String := none
+  identity? : Option String := none
 
 def NodeDisplay.title (display : NodeDisplay) : String :=
-  display.number?.map (fun number => s!"{display.kind} {number}") |>.getD (display.label.toString (escape := false))
+  display.identity?.getD (display.number?.map (fun number => s!"{display.kind} {number}") |>.getD (display.label.toString (escape := false)))
 
 def NodeDisplay.proofTitle (display : NodeDisplay) : String :=
   s!"Proof for {display.title}"

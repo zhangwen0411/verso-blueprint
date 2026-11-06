@@ -110,6 +110,7 @@ def codePanelByKey (state : TraverseState) (key : String) : Except String CodePa
 /-- Presentation of a node reference. A preview key is a candidate until artifact
 finalization establishes that its manifest entry and rendered body both exist. -/
 structure Reference where
+  headerLabel? : Option String := none
   title : String
   href : Option String
   previewKey : Option PreviewKey
@@ -137,12 +138,12 @@ borrow another facet's content. Proof-only nodes retain their ordinary proof tit
 def referenceOfData (state : TraverseState) (data : BlockData)
     (facet? : Option PreviewCache.Facet := none) : Reference :=
   let title := match TraversalIndex.Nodes.occurrence? state data.label with
-    | none => data.label.toString (escape := false)
+    | none => (data.display state).title
     | some stored =>
       let display := ({ data with toBlockPresentation := stored.toBlockPresentation }).display state
       let isProof := (facet?.map (· == .proof)).getD stored.isProof
       if isProof then display.proofTitle else display.title
-  referenceWithTitle state data.label facet? title
+  { referenceWithTitle state data.label facet? title with headerLabel? := data.displayIdentity }
 
 /-- Checked reference presentation, including for captured but unrendered nodes.
 Use this at authored-reference rendering boundaries so malformed or missing semantic

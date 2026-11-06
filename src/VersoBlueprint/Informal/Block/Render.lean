@@ -96,7 +96,7 @@ private def blockKindRenderStyle (data : BlockData) : BlockKindRenderStyle :=
 
 /-- Render the caption/label row shared by informal block shells. -/
 def renderBlockTitleRow (style : BlockKindRenderStyle)
-    (labelText numberText captionText : String) :
+    (labelText numberText captionText : String) (hasIdentity : Bool := false) :
     Verso.Output.Html :=
   open Verso.Output.Html in
   let titleRowClass :=
@@ -104,12 +104,13 @@ def renderBlockTitleRow (style : BlockKindRenderStyle)
       "bp_heading_title_row bp_heading_title_row_statement"
     else
       "bp_heading_title_row"
+  let titleRowClass := titleRowClass ++ (if hasIdentity then " bp_heading_title_row_identity" else "")
   let captionClass := s!"bp_caption bp_kind_{style.kindCss}_caption {style.captionCss}"
   let labelClass := s!"bp_label bp_kind_{style.kindCss}_label {style.labelCss}"
   {{
     <div class={{titleRowClass}}>
       <span class={{captionClass}} title={{labelText}}> {{.text true captionText}} </span>
-      {{ if style.showLabel then {{<span class={{labelClass}}> {{.text true numberText}} </span>}} else .empty }}
+      {{ if style.showLabel && !hasIdentity then {{<span class={{labelClass}}> {{.text true numberText}} </span>}} else .empty }}
     </div>
   }}
 
@@ -721,6 +722,7 @@ content container assembly.
 structure InformalBlockShell where
   style : BlockKindRenderStyle
   labelText : String
+  hasIdentity : Bool := false
   numberText : String
   captionText : String
   attrs : Array (String × String) := #[]
@@ -731,7 +733,7 @@ structure InformalBlockShell where
   showHeader : Bool := true
 
 private def renderShellTitleRow (shell : InformalBlockShell) : Verso.Output.Html :=
-  let titleRow := renderBlockTitleRow shell.style shell.labelText shell.numberText shell.captionText
+  let titleRow := renderBlockTitleRow shell.style shell.labelText shell.numberText shell.captionText shell.hasIdentity
   match shell.titleRowAttrs? with
   | some attrs => .tag "a" attrs titleRow
   | none => titleRow
@@ -786,7 +788,9 @@ def renderInformalBlockHtml (data : BlockData) (ctx : InformalBlockRenderContext
     (content : Array Verso.Output.Html) (showHeader : Bool := true) : Verso.Output.Html :=
   open Verso.Output.Html in
   let style := blockKindRenderStyle data
-  let labelText := s!"{data.label}"
+  let display : NodeDisplay := { label := data.label, kind := data.kind, identity? := data.displayIdentity }
+  let labelText := if data.displayIdentity.isSome then
+    (if data.isProof then display.proofTitle else display.title) else s!"{data.label}"
   let metadataPanel : Verso.Output.Html :=
     match data.isProof with
     | true => .empty
@@ -796,8 +800,9 @@ def renderInformalBlockHtml (data : BlockData) (ctx : InformalBlockRenderContext
     {
       style
       labelText
+      hasIdentity := data.displayIdentity.isSome
       numberText := ctx.numberText
-      captionText := ctx.captionText?.getD style.kindText
+      captionText := if data.displayIdentity.isSome then labelText else ctx.captionText?.getD style.kindText
       attrs := ctx.attrs
       titleRowAttrs? := ctx.titleRowAttrs?
       headerExtras

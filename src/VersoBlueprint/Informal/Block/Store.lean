@@ -234,8 +234,10 @@ def BlockData.display (data : BlockData) (st : TraverseState)
     (fallbackPrefix? : Option String := none) : NodeDisplay := {
   label := data.label
   kind := data.kind
-  number? := (Informal.TraversalIndex.Nodes.occurrence? st data.label).map fun stored =>
-    occurrenceNumber (data.withStoredNumbering stored.toBlockPresentation fallbackPrefix?)
+  identity? := data.displayIdentity
+  number? := if data.displayIdentity.isSome then none else
+    (Informal.TraversalIndex.Nodes.occurrence? st data.label).map fun stored =>
+      occurrenceNumber (data.withStoredNumbering stored.toBlockPresentation fallbackPrefix?)
 }
 
 /-- Resolve node presentation without turning an elaboration count into a document number. -/

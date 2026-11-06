@@ -108,8 +108,8 @@ private def informalBlockToHtml (renderPreview : PreviewResources.Render := Prev
             let externalCdata : CodeSummary.ComputedData := {
               source := some { externalDecls := externalDecls }
             }
-            let externalSummary := CodeSummary.renderPanelIndicator data.label externalCdata getDeclHref
-            let panelHeader := if data.isProof then proofReferencesPanelHeader else
+            let externalSummary := CodeSummary.renderPanelIndicator data.label externalCdata getDeclHref (some (data.display s))
+            let panelHeader := if data.isProof && data.displayIdentity.isNone then proofReferencesPanelHeader else
               codePanelHeader (data.display s)
             ExternalCode.renderPanelWithPageHovers
               panelHeader

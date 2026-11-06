@@ -8,6 +8,7 @@ import Lean
 import Verso
 import VersoManual
 import VersoBlueprint.Commands.Summary.Html
+import VersoBlueprint.Informal.Block.Store
 import VersoBlueprint.Lib.ExtensionDecode
 import VersoBlueprint.Lib.HoverRender
 import VersoBlueprint.Lib.PreviewSource
@@ -400,6 +401,7 @@ private def summaryBlockToHtml : BlockToHtml Manual (ReaderT AllRemotes (ReaderT
       | some key => keys.insert label (toString key)
       | Option.none => keys
     let ctx : SummaryHtmlContext := {
+      entryTitle? := fun label => (Informal.TraversalIndex.Nodes.display? s label).bind (·.identity?)
       entryHref? := fun label => Informal.TraversalIndex.Nodes.href? s label
       declHref? := fun label decl =>
         Resolve.resolveInformalDeclHref? s label decl

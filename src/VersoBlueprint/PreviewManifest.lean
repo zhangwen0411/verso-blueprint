@@ -683,7 +683,7 @@ This is a VBP stale-artifact diagnostic marker, not a public interchange
 version. It may change whenever the generated-data reader needs a clean
 validation boundary.
 -/
-def manifestInternalSchemaVersion : Nat := 11
+def manifestInternalSchemaVersion : Nat := 12
 
 def manifestInternalSchemaVersionField : String := "vbpInternalSchemaVersion"
 
@@ -870,6 +870,8 @@ structure RelatedEntry where
   label : Name
   /-- Resolved display title for the related node. -/
   title : String
+  /-- Optional reader identity used for relation row and preview header labels. -/
+  displayLabel? : Option String := none
   /-- Canonical link target for the related informal node, if available. -/
   href : Option String := none
   /-- Manifest/cache-backed preview key for this related node, if available. -/
@@ -889,9 +891,10 @@ instance : FromJson RelatedEntry where
     let label ← json.getObjValAs? Name "label"
     let title ← json.getObjValAs? String "title"
     let href ← jsonObjValAsD json "href" (none : Option String)
+    let displayLabel? ← jsonObjValAsD json "displayLabel" (none : Option String)
     let previewKey ← jsonObjValAsD json "previewKey" (none : Option Informal.PreviewKey)
     let dependencies ← json.getObjValAs? (Array Relation.Dependency) "dependencies"
-    pure { label, title, href, previewKey, dependencies }
+    pure { label, title, displayLabel?, href, previewKey, dependencies }
 
 /-- Manifest-owned group metadata shared by all informal nodes in the group. -/
 structure GroupRelation where
@@ -1932,6 +1935,8 @@ private structure BlockHeadingParts where
 private def blockHeadingParts? (state : TraverseState) (blockData : Informal.BlockData)
     (facet : PreviewCache.Facet) : Option BlockHeadingParts := do
   let display := blockData.display state
+  if display.identity?.isSome then
+    return { caption := if facet == .proof then display.proofTitle else display.title, label := "" }
   let number ← display.number?
   match facet with
   | .statement => some { caption := toString display.kind, label := number }
@@ -2013,6 +2018,7 @@ private def relatedEntryForBlock
   {
     label := blockData.label
     title := reference.title
+    displayLabel? := reference.headerLabel?
     href := reference.href
     previewKey := reference.previewKey
     dependencies
@@ -2021,6 +2027,7 @@ private def relatedEntryForBlock
 private def RelatedEntry.ofPanel (entry : Informal.RelatedPanel.PanelEntry) : RelatedEntry := {
   label := entry.label
   title := entry.previewTitle
+  displayLabel? := entry.displayLabel?
   href := entry.href
   previewKey := entry.previewKey
   dependencies := entry.dependencies
@@ -2271,7 +2278,9 @@ private def leanCodePreviewManifestEntry
     facet := .statement
     title :=
       match entry.source with
-      | .inlineBlocks label .. => s!"Lean code for {label}"
+      | .inlineBlocks label .. =>
+          let identity? := (Informal.TraversalIndex.Nodes.display? state label).bind (·.identity?)
+          s!"Lean code for {identity?.getD s!"{label}"}"
       | .externalDecl _ => Informal.LeanCodePreview.title entry.target
     sources := (sourceRefs.get? key).getD #[]
     href := Informal.TraversalIndex.LeanCodePreviews.href? state key

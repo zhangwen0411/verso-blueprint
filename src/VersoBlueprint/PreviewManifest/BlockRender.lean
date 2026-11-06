@@ -121,8 +121,11 @@ private def renderCodeExtra (entry : Entry) (blockData : Informal.BlockData) :
 
 private def renderUsedByExtra (cfg : RelationPanelsConfig) (entry : Entry) :
     Informal.HeaderExtra :=
+  let panelCfg := Informal.RelatedPanel.usedByPanelConfig (some entry.label)
+  let panelCfg := if entry.displayIdentity.isSome then
+    { panelCfg with chipTitle := fun _ => s!"Used by {entry.title}" } else panelCfg
   Informal.HeaderExtra.usedBy <| renderRelatedPanel cfg .usedBy
-    (Informal.RelatedPanel.usedByPanelConfig (some entry.label))
+    panelCfg
     entry.usedBy entry Name.anonymous
 
 private def renderHeaderExtras
@@ -147,13 +150,19 @@ private def renderCodePanel
   if content.codeBodies.isEmpty then
     .empty
   else
+    let display : Informal.NodeDisplay := {
+      label := entry.label
+      kind := entry.kind.getD .lemma
+      identity? := entry.displayIdentity }
     let panelSummary := Informal.CodeSummary.renderPanelIndicator
       entry.label
       { source := content.codeData.nonempty? }
-      (fun _ => none)
+      (fun _ => none) (some display)
     let codeHtml := .seq content.codeBodies
     let body := Html.tag "div" (Informal.htmlClassAttrs cfg.codeBodyClass) codeHtml
-    let header := if entry.facet == .proof then Informal.proofReferencesPanelHeader else
+    let header := if entry.displayIdentity.isSome then
+      Informal.codePanelHeader display
+    else if entry.facet == .proof then Informal.proofReferencesPanelHeader else
       { caption := s!"Lean code for {title.caption}", number? := some title.label }
     Informal.mkCodePanel
       header

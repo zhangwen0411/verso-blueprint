@@ -48,6 +48,12 @@ def css : String := r##"
   column-gap: 0.45rem;
 }
 
+.bp_heading_title_row_identity {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .bp_caption {
   display: inline;
 }

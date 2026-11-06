@@ -993,8 +993,8 @@ def nodeDataWithExternal
     let warnings := nodeWarnings external state label node
     {
       label
-      title := nodeTitle resolveTitle? label
-      displayLabel := graphNode.displayLabel
+      title := node.displayIdentity.getD (nodeTitle resolveTitle? label)
+      displayLabel := node.displayIdentity.getD graphNode.displayLabel
       kind := some node.kind
       parent := node.parent
       href := resolveHref? label

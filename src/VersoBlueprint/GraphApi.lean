@@ -46,7 +46,9 @@ private def enrichNode (state : TraverseState) (node : Informal.Graph.NodeData) 
   let title := (nodeTitle? state node.label).getD node.title
   let href := nodeHref? state node.label <|> node.href
   let previewKey := Informal.PreviewSource.traversalPreviewCandidateKey? state node.label
-  { node with title, href, previewKey }
+  let displayLabel := ((Informal.TraversalIndex.Nodes.display? state node.label).bind
+    (·.identity?)).getD node.displayLabel
+  { node with title, displayLabel, href, previewKey }
 
 private def enrichGroup (state : TraverseState) (group : Informal.Graph.GroupMetadata) :
     Informal.Graph.GroupMetadata :=

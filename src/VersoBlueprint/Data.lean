@@ -610,6 +610,8 @@ def InformalData.dependencyLabels (data : InformalData) : Array Label :=
   data.deps.map (·.label)
 
 structure Node where
+  /-- Optional reader identity, replacing the generated kind and number in presentation. -/
+  displayIdentity : Option String := none
   kind : NodeKind := .lemma
   /-- An author-supplied kind takes precedence over classification inferred from Lean code. -/
   kindIsExplicit : Bool := false
@@ -643,6 +645,8 @@ records. Dependencies are independent of body
 additions; adding code or dependencies cannot reclassify an authored statement.
 -/
 structure NodeContribution where
+  /-- Optional reader identity, replacing the generated kind and number in presentation. -/
+  displayIdentity : Option String := none
   /-- Explicit kind from a statement directive, including an empty placeholder. -/
   kind : Option NodeKind := none
   count : Nat := 0

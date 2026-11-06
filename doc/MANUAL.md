@@ -2106,3 +2106,13 @@ not extract or print compiled values and does not change reference serialization
 Panels list a structure's fields and hide its constructor. Set
 `verso.blueprint.externalCode.structureConstructors` to `true` where associations are elaborated
 to also render the constructor natively, as for inductive constructors.
+
+### Per-node display identities
+
+A block command elaborated inside an informal node may call
+`Informal.Environment.setDisplayIdentity identity : DocElabM Unit`. The nonempty
+identity replaces the generated kind and number on every presentation surface,
+including references, code panels, previews, the manifest, graphs and Summary.
+The mathematical kind, numbering counters, labels and links retain their semantics.
+Proof headings become “Proof for <identity>”. The call throws outside a node or
+if that node already has an identity. Ordinary nodes render as before.

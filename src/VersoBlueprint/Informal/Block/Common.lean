@@ -100,6 +100,7 @@ structure CodePanelHeader where
 deriving Repr, Inhabited
 
 def codePanelHeaderFor (languageName : String) (display : NodeDisplay) : CodePanelHeader :=
+  if display.identity?.isSome then { caption := s!"{languageName} code for {display.title}" } else
   match display.number? with
   | some number => { caption := s!"{languageName} code for {display.kind}", number? := some number }
   | none => { caption := s!"{languageName} code for {display.title}" }

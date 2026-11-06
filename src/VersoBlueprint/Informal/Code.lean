@@ -117,7 +117,7 @@ block_extension Block.informalCode (data : InlineCodeData) where
       let panelSummary :=
         renderPanelIndicator label
           (CodeSummary.ComputedData.ofInlineBlocks #[cdata])
-          getDeclHref
+          getDeclHref (Informal.TraversalIndex.Nodes.display? s label)
       let panelAttrs := attrs.push ("data-bp-proof-fold", if foldProofs then "on" else "off")
       let panelBody := .seq (← blocks.mapM goB)
       pure <| mkCodePanel panelHeader panelSummary.summaryTitle panelSummary.indicator panelBody panelAttrs

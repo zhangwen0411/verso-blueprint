@@ -23,6 +23,8 @@ This stays separate from `Data.Node`: it collects authored metadata and uses
 before the final checked contribution is assembled.
 -/
 structure InProgress where
+  /-- Optional reader identity, replacing the generated kind and number in presentation. -/
+  displayIdentity : Option String := none
   label : Label
   kind : Data.InProgressKind := .proof
   externalRefs : Array ExternalRef := #[]
@@ -417,6 +419,7 @@ private def InProgress.toContribution (current : InProgress) (count : Nat) (ref 
   proofUses := match current.kind with
     | .statement _ => current.proofUses
     | .proof => current.deps ++ current.proofUses
+  displayIdentity := current.displayIdentity
   parent := current.parent
   owner := current.owner
   tags := current.tags
@@ -490,6 +493,18 @@ def withDirective [MonadExceptOf Exception m] [MonadLiftT CoreM m]
   | some _ => modify fun state => { state with activeDirective := before.activeDirective }
   | none => modify fun _ => before
   return result
+
+/-- Set the active node's reader identity exactly once, from a directive body. -/
+def setDisplayIdentity (identity : String) : Verso.Doc.Elab.DocElabM Unit := do
+  let state := informalExt.getState (← getEnv)
+  let some current := state.activeDirective
+    | throwError "display identity outside an informal environment"
+  if identity.trimAscii.toString.isEmpty then
+    throwError "display identity must be nonempty"
+  if current.displayIdentity.isSome || (state.data.get? current.label).any (·.displayIdentity.isSome) then
+    throwError "display identity already set for {current.label}"
+  modify fun state =>
+    { state with activeDirective := some { current with displayIdentity := some identity } }
 
 def addUse (stx : Syntax) (useRef : UseRef) : m Unit := do
   match (informalExt.getState (← getEnv)).activeDirective with
