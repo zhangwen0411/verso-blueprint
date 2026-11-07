@@ -396,7 +396,8 @@ private def renderExternalDeclWrapper
     (signature : ExternalDeclHtml) (body : ExternalDeclHtml)
     (headerBadge? : Option ExternalDeclHeaderBadge := none)
     (headerMeta : Array String := #[])
-    (headerSource? : Option ExternalDeclHeaderSource := none) : ExternalDeclHtml :=
+    (headerSource? : Option ExternalDeclHeaderSource := none)
+    (docNotice? : Option String := none) : ExternalDeclHtml :=
   open Verso.Output.Html in
   let headerMetaHtml : ExternalDeclHtml :=
     if headerMeta.isEmpty then
@@ -425,6 +426,9 @@ private def renderExternalDeclWrapper
           <span class="bp_external_decl_kind">{{.text true kindMarker}}</span>
           {{headerMetaHtml}}
           {{headerSourceHtml}}
+          {{if let some notice := docNotice? then
+            {{<span class="bp_external_decl_doc_notice">{{.text true notice}}</span>}}
+          else .empty}}
         </div>
         <div class="bp_external_decl_kicker_status">
           {{if let some badge := headerBadge? then
@@ -625,20 +629,27 @@ private def renderDeclHtmlDocstringFromInfoE
     if let some s := inductiveCtorsSection? then
       sections := sections.push s
 
-    if let some source := externalDeclSource? env decl then
-      let sourceHtml ← runHighlightedHtml <|
-        withReader (fun ctx => { ctx with
-          options.inlineProofStates := false
-          options.definitionsAsTargets := false }) <|
-          source.code.toHtml (g := Verso.Genre.Manual)
-      let sourceBlock := {{
-        <pre class="bp_external_decl_source_code hl lean block"><span>{{sourceHtml}}</span></pre>
-      }}
-      if let some sourceSection := renderTitledSection? decl "Definition" #[sourceBlock] then
-        sections := sections.push sourceSection
-
     let presentation := externalDeclPresentation declType cinfo
     let signatureHtml ← signatureToHtml presentation.keywordText signature
+    let (signatureHtml, docNotice?) ←
+      if let some source := externalDeclSource? env decl then do
+        let sourceHtml ← runHighlightedHtml <|
+          withReader (fun ctx => { ctx with
+            options.inlineProofStates := false
+            options.definitionsAsTargets := false }) <|
+            source.code.toHtml (g := Verso.Genre.Manual)
+        let bands := {{
+          <div class="bp_external_decl_definition">
+            <p class="bp_external_decl_signature_caption">"Signature · generated"</p>
+            {{signatureHtml}}
+            <p class="bp_external_decl_body_caption">"Body · source excerpt"</p>
+            <pre class="bp_external_decl_source_code hl lean block">
+              <span>{{sourceHtml}}</span>
+            </pre>
+          </div>
+        }}
+        pure (bands, source.docNotice?)
+      else pure (signatureHtml, none)
     let headerMeta := safetyHeaderMeta cinfo ++ renderExternalDeclHeaderMeta declType
 
     let body : ExternalDeclHtml :=
@@ -649,6 +660,7 @@ private def renderDeclHtmlDocstringFromInfoE
     pure <| renderExternalDeclWrapper
       decl presentation.kindClass presentation.kindMarker signatureHtml body
       (headerBadge? := headerBadge?) (headerMeta := headerMeta) (headerSource? := headerSource?)
+      (docNotice? := docNotice?)
   pure <| .ok rendered
 
 /--

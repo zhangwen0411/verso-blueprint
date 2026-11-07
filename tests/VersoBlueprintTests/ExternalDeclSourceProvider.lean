@@ -18,7 +18,7 @@ opaque opaqueProof : True := trivial
 run_elab do
   Informal.registerExternalDeclSource
     `Verso.VersoBlueprintTests.ExternalDeclSourceProvider.value {
-      code := .text "def value : Nat := 7"
+      code := .text ":= 7"
       provenance := "ExternalDeclSourceProvider.lean" }
 
 end Verso.VersoBlueprintTests.ExternalDeclSourceProvider

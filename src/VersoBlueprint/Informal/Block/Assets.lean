@@ -1568,10 +1568,36 @@ a.bp_external_decl_source_path:hover {
   word-break: break-word;
 }
 
+/* Registered definitions have adjacent generated and authored code bands. */
+.bp_external_decl_definition {
+  min-width: 0;
+  border: 1px solid var(--bp-color-border-soft);
+  border-radius: 0.25rem;
+  margin: 0.35rem;
+}
+
+.bp_external_decl_signature_caption,
+.bp_external_decl_body_caption {
+  margin: 0;
+  padding: 0.3rem 0.35rem;
+  color: var(--bp-color-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.bp_external_decl_body_caption {
+  border-top: 1px solid var(--bp-color-border-soft);
+}
+
+.bp_external_decl_doc_notice {
+  color: var(--bp-color-text-strong);
+  font-size: 0.74rem;
+}
+
 /* Registered source uses the same wrapping in panels and cached previews. */
 .bp_external_decl_rendered .bp_external_decl_source_code.hl.lean {
   margin: 0;
-  padding: 0;
+  padding: 0.4rem 0.35rem;
   border: 0;
   background: transparent;
   font-size: 0.86rem;

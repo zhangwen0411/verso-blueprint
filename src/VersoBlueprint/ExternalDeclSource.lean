@@ -10,12 +10,13 @@ open Lean Meta
 
 namespace Informal
 
-/-- Client-supplied exact source, without the declaration docstring.
+/-- Client-supplied source excerpt, without the declaration docstring.
 `provenance` identifies the source revision or location for client freshness checks.
 Blueprint does not read files or infer source from compiled declaration values. -/
 structure ExternalDeclSource where
   code : SubVerso.Highlighting.Highlighted
   provenance : String
+  docNotice? : Option String := none
   deriving Inhabited
 
 initialize externalDeclSources :

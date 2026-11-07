@@ -12,6 +12,7 @@ namespace Verso.VersoBlueprintTests.ExternalDeclRender
 
 open Lean
 
+/-- A same-module definition used by renderer regression tests. -/
 def sameModuleRenderDef : Nat := 0
 
 abbrev sameModuleRenderAbbrev : Nat := sameModuleRenderDef
@@ -335,7 +336,7 @@ private def htmlTestContext :
           `Verso.VersoBlueprintTests.ExternalDeclSourceProvider.opaqueProof source).run'
         pure false
       catch _ => pure true
-    pure <| source.code.toString == "def value : Nat := 7" &&
+    pure <| source.code.toString == ":= 7" &&
       source.provenance == "ExternalDeclSourceProvider.lean" &&
       rendered.asString.contains "Documentation stays outside the registered source." &&
       rendered.asString.contains "bp_external_decl_source_code" && proofRejected && opaqueRejected
@@ -351,8 +352,9 @@ private def htmlTestContext :
     let signature ← (show Lean.MetaM _ from
       Verso.Genre.Manual.Signature.forName `Nat.succ).run'
     let source : Informal.ExternalDeclSource := {
-      code := .seq #[.text "def example := ", signature.wide]
-      provenance := "fixture.lean:1" }
+      code := .seq #[.text ":= ", signature.wide]
+      provenance := "fixture.lean:1"
+      docNotice? := some "Writeup deviations below ↓" }
     (Informal.registerExternalDeclSource name source).run'
     let some info := (← getEnv).find? name | return false
     let .ok after ← (Informal.renderDeclHtmlDirectFromInfoE name info).run'
@@ -377,8 +379,18 @@ private def htmlTestContext :
       unrelated.map (·.asString) == unrelatedAfter.map (·.asString) &&
       after.html.contains "bp_external_decl_signature" &&
       after.html.contains "bp_external_decl_source_code hl lean block" &&
-      after.html.contains "Definition</p>" &&
-      after.html.contains "def example := " &&
+      after.html.contains "Signature · generated" &&
+      after.html.contains "Body · source excerpt" &&
+      !(after.html.contains "Definition</p>") &&
+      after.html.contains "Writeup deviations below ↓" &&
+      after.html.contains "bp_external_decl_doc_notice" &&
+      after.html.contains "<span class=\"bp_external_decl_doc_notice\">" &&
+      (after.html.splitOn "Signature · generated")[1]!.contains
+        "Body · source excerpt" &&
+      (after.html.splitOn "Body · source excerpt")[1]!.contains
+        "bp_external_decl_source_code" &&
+      (after.html.splitOn "bp_external_decl_source_code")[1]!.contains
+        "A same-module definition used by renderer regression tests." &&
       after.hoverPayloads.size > 0 && snapshotHasSource &&
       duplicateRejected && theoremRejected
 
