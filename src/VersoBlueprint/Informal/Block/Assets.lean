@@ -1568,25 +1568,48 @@ a.bp_external_decl_source_path:hover {
   word-break: break-word;
 }
 
-/* Registered definitions have adjacent generated and authored code bands. */
+/* Registered definitions flow as one generated signature continued by source. */
 .bp_external_decl_definition {
   min-width: 0;
   border: 1px solid var(--bp-color-border-soft);
   border-radius: 0.25rem;
   margin: 0.35rem;
+  padding: 0.4rem 0.35rem;
+  background: var(--bp-color-surface);
+  font-family: var(--verso-code-font-family);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-.bp_external_decl_signature_caption,
-.bp_external_decl_body_caption {
+/* These selectors outrank Verso's `.hl.lean.block` and the inline-preview variant rules. */
+.bp_external_decl_rendered .bp_external_decl_definition > .bp_external_decl_signature_wrap,
+.bp_external_decl_rendered .bp_external_decl_definition >
+    .bp_external_decl_signature_wrap > .wide-only {
+  display: contents;
+}
+
+/* Follow Verso's wide/narrow switch while keeping the visible variant inline. */
+@media screen and (max-width: 500px),
+       screen and (min-width: 700px) and (max-width: 920px) {
+  .bp_external_decl_rendered .bp_external_decl_definition >
+      .bp_external_decl_signature_wrap > .wide-only {
+    display: none;
+  }
+  .bp_external_decl_rendered .bp_external_decl_definition >
+      .bp_external_decl_signature_wrap > .narrow-only {
+    display: contents;
+  }
+}
+
+.bp_external_decl_rendered .bp_external_decl_definition
+    .bp_external_decl_signature.hl.lean.block,
+.bp_external_decl_rendered .bp_external_decl_definition
+    .bp_external_decl_source_code.hl.lean.block {
+  display: inline;
   margin: 0;
-  padding: 0.3rem 0.35rem;
-  color: var(--bp-color-text-muted);
-  font-size: 0.74rem;
-  line-height: 1.35;
-}
-
-.bp_external_decl_body_caption {
-  border-top: 1px solid var(--bp-color-border-soft);
+  padding: 0;
 }
 
 .bp_external_decl_doc_notice {
@@ -1597,7 +1620,7 @@ a.bp_external_decl_source_path:hover {
 /* Registered source uses the same wrapping in panels and cached previews. */
 .bp_external_decl_rendered .bp_external_decl_source_code.hl.lean {
   margin: 0;
-  padding: 0.4rem 0.35rem;
+  padding: 0;
   border: 0;
   background: transparent;
   font-size: 0.86rem;

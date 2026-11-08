@@ -379,20 +379,36 @@ private def htmlTestContext :
       unrelated.map (·.asString) == unrelatedAfter.map (·.asString) &&
       after.html.contains "bp_external_decl_signature" &&
       after.html.contains "bp_external_decl_source_code hl lean block" &&
-      after.html.contains "Signature · generated" &&
-      after.html.contains "Body · source excerpt" &&
+      after.html.contains "<span class=\"bp_external_decl_join\"> </span>" &&
       !(after.html.contains "Definition</p>") &&
       after.html.contains "Writeup deviations below ↓" &&
       after.html.contains "bp_external_decl_doc_notice" &&
       after.html.contains "<span class=\"bp_external_decl_doc_notice\">" &&
-      (after.html.splitOn "Signature · generated")[1]!.contains
-        "Body · source excerpt" &&
-      (after.html.splitOn "Body · source excerpt")[1]!.contains
+      (after.html.splitOn "bp_external_decl_signature_wrap")[1]!.contains
+        "bp_external_decl_join" &&
+      (after.html.splitOn "bp_external_decl_join")[1]!.contains
         "bp_external_decl_source_code" &&
       (after.html.splitOn "bp_external_decl_source_code")[1]!.contains
         "A same-module definition used by renderer regression tests." &&
       after.hoverPayloads.size > 0 && snapshotHasSource &&
       duplicateRejected && theoremRejected
+
+-- The join follows the source value token without changing the source text.
+/-- info: true -/
+#guard_msgs in
+#eval
+  show Lean.CoreM Bool from do
+    let mut ok := true
+    for (name, text, join) in #[
+        (`Verso.VersoBlueprintTests.ExternalDeclRender.sameModuleRenderAbbrev, "where x := 0", " "),
+        (`Verso.VersoBlueprintTests.ExternalDeclRender.sameModuleRenderUnsafeDef,
+          "  | n => n", "\n")] do
+      (Informal.registerExternalDeclSource name {
+        code := .text text, provenance := "fixture" }).run'
+      let some rendered ← (Informal.renderDeclHtmlNodeDirect? name).run' | return false
+      ok := ok && rendered.asString.contains
+        s!"<span class=\"bp_external_decl_join\">{join}</span>"
+    return ok
 
 -- Structure constructors are hidden by default and rendered natively when requested.
 /-- info: true -/

@@ -247,8 +247,16 @@ dedup table instead of using it.
 private def renderWithHoverPayloads
     (html : ExternalDeclHighlightRender ExternalDeclHtml) : ExternalDeclRenderedHtml :=
   let (html, hoverState) := html.run {}
+  -- Pretty-printing adds whitespace between block tags. Inside a seamless code box,
+  -- only the explicit join may separate the signature from its source.
+  let html := templateVersoHoverAttrs html hoverState.dedup
+  let html := Id.run <| html.visitM (tag := fun name attrs contents => do
+    if attrs.contains ("class", "bp_external_decl_definition") then
+      pure <| some <| .text false ((.tag name attrs contents : ExternalDeclHtml).asString
+        (breakLines := false))
+    else pure none)
   {
-    html := (templateVersoHoverAttrs html hoverState.dedup).asString
+    html := html.asString
     hoverPayloads := hoverPayloads hoverState.dedup
   }
 
@@ -638,17 +646,18 @@ private def renderDeclHtmlDocstringFromInfoE
             options.inlineProofStates := false
             options.definitionsAsTargets := false }) <|
             source.code.toHtml (g := Verso.Genre.Manual)
-        let bands := {{
+        let text := source.code.toString
+        let join := if text.startsWith ":=" || text.startsWith "where" then " " else "\n"
+        let definition := {{
           <div class="bp_external_decl_definition">
-            <p class="bp_external_decl_signature_caption">"Signature · generated"</p>
             {{signatureHtml}}
-            <p class="bp_external_decl_body_caption">"Body · source excerpt"</p>
+            <span class="bp_external_decl_join">{{.text true join}}</span>
             <pre class="bp_external_decl_source_code hl lean block">
               <span>{{sourceHtml}}</span>
             </pre>
           </div>
         }}
-        pure (bands, source.docNotice?)
+        pure (definition, source.docNotice?)
       else pure (signatureHtml, none)
     let headerMeta := safetyHeaderMeta cinfo ++ renderExternalDeclHeaderMeta declType
 
