@@ -50,6 +50,17 @@ structure InferredUseRefs where
   proof : Array Data.UseRef := #[]
 deriving Inhabited, Repr
 
+/-- Prospective associations let external documents infer against their complete node inventory.
+Clients must validate these promises against the final associations. -/
+initialize prospectiveAssociations : SimplePersistentEnvExtension
+    (Name × Data.Label) (NameMap (Array Data.Label)) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := fun state (decl, label) =>
+      state.insert decl (Data.Label.pushUnique (state.getD decl #[]) label)
+    addImportedFn := fun arrays => arrays.foldl (init := {}) fun state entries =>
+      entries.foldl (init := state) fun state (decl, label) =>
+        state.insert decl (Data.Label.pushUnique (state.getD decl #[]) label) }
+
 def enabled (opts : Options) (local? : Option Bool) : Bool :=
   local?.getD (verso.blueprint.autoDeps.get opts)
 
@@ -135,6 +146,8 @@ private def frontierLabels (root : Name) (seeds : Array Name)
       continue
     visited := visited.insert decl
     let associated ← Environment.labelsForLeanDecl decl
+    let associated := (prospectiveAssociations.getState env).getD decl #[] |>.foldl
+      Data.Label.pushUnique associated
     if !associated.isEmpty then
       for label in associated do
         labels := labels.insert label
@@ -150,9 +163,17 @@ private def frontierLabels (root : Name) (seeds : Array Name)
 def infer (decl : Name) (info : ConstantInfo) : CoreM InferredDeps := do
   let decl := decl.eraseMacroScopes
   let expandHelpers := verso.blueprint.autoDeps.expandUntagged.get (← getOptions)
-  let statement ← frontierLabels decl info.type.getUsedConstants expandHelpers
-  let proof ← frontierLabels decl (← rootBodyConstants info) expandHelpers
-  return { statement, proof }
+  let body ← rootBodyConstants info
+  -- A definition's value and an inductive's constructors give its meaning.
+  -- Only theorem and opaque proof values belong to the proof axis.
+  match info with
+  | .thmInfo _ | .opaqueInfo _ =>
+    let statement ← frontierLabels decl info.type.getUsedConstants expandHelpers
+    let proof ← frontierLabels decl body expandHelpers
+    return { statement, proof }
+  | _ =>
+    let statement ← frontierLabels decl (info.type.getUsedConstants ++ body) expandHelpers
+    return { statement }
 
 def inferDecl? (decl : Name) : CoreM InferredDeps := do
   let decl := decl.eraseMacroScopes

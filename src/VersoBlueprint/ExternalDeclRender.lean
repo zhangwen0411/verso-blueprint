@@ -439,7 +439,7 @@ private def renderExternalDeclWrapper
           else .empty}}
         </div>
         <div class="bp_external_decl_kicker_status">
-          {{if let some badge := headerBadge? then
+          {{if let some badge := headerBadge?.filter (·.text != "complete") then
             {{<span class={{s!"bp_external_status_badge bp_external_decl_header_status {badge.className}"}}>{{.text true badge.text}}</span>}}
           else .empty}}
         </div>

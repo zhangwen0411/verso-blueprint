@@ -36,7 +36,7 @@ private def expectedUsesMatrix : Array ExpectedUses :=
     },
     {
       labelText := "auto.def.target",
-      proof := #[useRef "auto.def.source" .automatic]
+      statement := #[useRef "auto.def.source" .automatic]
     },
     {
       labelText := "auto.imported.target",

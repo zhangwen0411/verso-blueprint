@@ -55,3 +55,23 @@ test('inserted registered documentation becomes prose without hidden metadata', 
   assert.equal(replacement.className, 'docstring');
   assert.equal(replacement.innerHTML, '<p>Visible documentation</p>');
 });
+
+
+test('numbered identities match whole numbers and suppress fuzzy chapter results', () => {
+  let seen;
+  const fuzzy = {go(query, targets) { seen = targets; return targets; }};
+  const text = {search() { return ['chapter']; }};
+  const context = {document: {readyState: 'loading'},
+    window: {addEventListener() {}}};
+  vm.runInNewContext(script, context);
+  context.blueprintInstallNumberSearch(['4.2', 'Theorem 4.2', '4.20'], fuzzy, text);
+  const targets = ['4.2', '4.20', 'Theorem 4.2'].map(target => ({target}));
+  fuzzy.go('4.2', targets);
+  assert.deepEqual(seen.map(t => t.target), ['4.2']);
+  fuzzy.go('Theorem 4.2', targets);
+  assert.deepEqual(seen.map(t => t.target), ['Theorem 4.2']);
+  assert.equal(text.search('4.2').length, 0);
+  assert.deepEqual(text.search('clock'), ['chapter']);
+  fuzzy.go('clock', targets);
+  assert.equal(seen, targets);
+});

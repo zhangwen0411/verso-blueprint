@@ -751,8 +751,8 @@ theorem prop96Inline : True := prop95
 ````
 
 When inference is enabled, Blueprint starts separate walks from the constants in
-the declaration's type and compiled body. The type walk produces statement
-dependencies; the body walk produces proof dependencies. At an unassociated
+the declaration's type and compiled body. Types produce statement dependencies. Definition values and constructor types also produce
+statement dependencies; theorem and opaque values produce proof dependencies. At an unassociated
 definition, theorem, or opaque declaration, when helper expansion is enabled,
 each walk follows both its type and body, keeping the axis of the walk that
 reached it. For example, a helper's type can introduce a proof dependency when
@@ -883,7 +883,7 @@ the inferred dependency edges.
 | Add chapter prose around the declaration | Supported with ordinary prose before and after the placement command. For an attribute node without a docstring, a matching statement directive can instead supply prose inside the node shell. |
 | Reuse the same node in several places | Supported. The node keeps one semantic identity; later `{blueprint_node}` occurrences are presentation views and may use compact/header/display-label options. |
 | Use the declaration docstring as the statement | Supported for plain Markdown, standard structural `doc.verso` content, and Blueprint `{uses}` / `{bpref}` references. Structural markup and math also survive in the attached external-declaration panel, where references use readable fallback text. Other custom extensions use their fallback children. An absent docstring produces a code-only placement. |
-| Infer formal dependencies | Supported with `(autoDeps := true)` or `set_option verso.blueprint.autoDeps true`. Follows unassociated helpers by default; `set_option verso.blueprint.autoDeps.expandUntagged false` selects direct-only inference. Type/body walks produce statement/proof dependencies respectively. |
+| Infer formal dependencies | Supported with `(autoDeps := true)` or `set_option verso.blueprint.autoDeps true`. Follows unassociated helpers by default; `set_option verso.blueprint.autoDeps.expandUntagged false` selects direct-only inference. Types, definition values and constructors produce statement dependencies; theorem values produce proof dependencies. |
 | Curate dependencies manually | Supported with attribute options `uses` and `proofUses`, using either Blueprint label strings or tagged Lean declaration names. Prefixing an entry with `-` excludes it on that axis. With `doc.verso` enabled, `{uses ...}[]` inside the adopted docstring adds statement dependencies; `{bpref ...}[]` adds links only. |
 | Attach several labels to one Lean declaration, or several Lean declarations to one label | Supported. Associations are many-to-many and are deduplicated by canonical Lean name or Blueprint label as appropriate. |
 | Add a separate informal proof | Supported with `:::proof "label"` once the node has a statement payload. For an undocumented, dependency-free attribute node, first add a matching statement directive. A proof body persisted in an imported provider module is not yet materialized by `{includeBlueprintModule}` or an initial `{blueprint_node}` placement. |

@@ -26,7 +26,7 @@ def diamondTarget : Nat := diamond
 def stoppedTarget : Nat := behindBoundary
 
 @[blueprint "auto.frontier.excluded_boundary" (autoDeps := true)
-  (proofUses := [-"auto.frontier.boundary"])]
+  (uses := [-"auto.frontier.boundary"])]
 def excludedBoundary : Nat := behindBoundary
 
 -- The helper type is reached from the proof, so both resulting edges are proof-side.
@@ -121,15 +121,16 @@ theorem afterAssociation : lateHelper := True.intro
       { labelText, statement := #[useRef "auto.type.source" .automatic],
         proof := #[useRef "auto.proof.source" .automatic] }
   let failures ← expectedUsesFailures <| common ++ #[
-    { labelText := "auto.frontier.diamond", proof := #[useRef "auto.def.source" .automatic] },
-    { labelText := "auto.frontier.stopped", proof := #[useRef "auto.frontier.boundary" .automatic] },
+    { labelText := "auto.frontier.diamond", statement := #[useRef "auto.def.source" .automatic] },
+    { labelText := "auto.frontier.stopped",
+      statement := #[useRef "auto.frontier.boundary" .automatic] },
     { labelText := "auto.frontier.excluded_boundary" },
     { labelText := "auto.frontier.helper_type",
       proof := #[useRef "auto.proof.source" .automatic, useRef "auto.type.source" .automatic] },
     { labelText := "auto.frontier.axiom_leaf" },
-    { labelText := "auto.frontier.opaque", proof := #[useRef "auto.def.source" .automatic] },
+    { labelText := "auto.frontier.opaque", statement := #[useRef "auto.def.source" .automatic] },
     { labelText := "auto.frontier.inductive", statement := #[useRef "auto.type.source" .automatic] },
-    { labelText := "auto.frontier.recursive", proof := #[useRef "auto.def.source" .automatic] },
+    { labelText := "auto.frontier.recursive", statement := #[useRef "auto.def.source" .automatic] },
     { labelText := "auto.frontier.shared",
       statement := #[useRef "auto.shared.source.primary" .automatic,
         useRef "auto.shared.source.secondary" .automatic] },
@@ -156,7 +157,7 @@ theorem afterAssociation : lateHelper := True.intro
       value := mkConst previous, hints := .abbrev, safety := .safe }
     previous := name
   let deps ← DependencyAnalysis.inferDecl? previous
-  unless deps.statement.isEmpty && deps.proof == #[label "auto.def.source"] do
+  unless deps.proof.isEmpty && deps.statement == #[label "auto.def.source"] do
     throwError "Long helper chain lost its frontier"
   -- Missing names are terminal, not fabricated nodes.
   let missing ← DependencyAnalysis.inferDecl? `blueprintMissingHelper
@@ -164,7 +165,7 @@ theorem afterAssociation : lateHelper := True.intro
     throwError "Unknown declaration created a dependency"
   -- A tagged root is analyzed, not returned as its own frontier.
   let root ← DependencyAnalysis.inferDecl? ``HelperProvider.boundary
-  unless root.statement.isEmpty && root.proof == #[label "auto.def.source"] do
+  unless root.proof.isEmpty && root.statement == #[label "auto.def.source"] do
     throwError "The root's association hid its dependencies"
   -- Exercise a programmatically supplied constructor association. The standard
   -- authoring syntax does not currently accept constructor attachments.
@@ -183,8 +184,8 @@ theorem afterAssociation : lateHelper := True.intro
     | throwError "Could not register the collector's constructor boundary"
   -- Inductive bodies walk constructor names, respecting their associations.
   let inductiveDeps ← DependencyAnalysis.inferDecl? ``HelperProvider.HiddenBox
-  unless inductiveDeps.statement.isEmpty &&
-      inductiveDeps.proof == #[label "auto.frontier.constructor"] do
+  unless inductiveDeps.proof.isEmpty &&
+      inductiveDeps.statement == #[label "auto.frontier.constructor"] do
     throwError "Inductive expansion bypassed an associated constructor"
 
 private def impls : Genre.Manual.ExtensionImpls := extension_impls%

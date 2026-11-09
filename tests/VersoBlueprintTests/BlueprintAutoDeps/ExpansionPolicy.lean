@@ -67,7 +67,7 @@ def afterNestedTarget : Nat := first
 -- Direct-only inductive roots still inspect their own constructor types.
 #eval show CoreM Unit from do
   let deps ← DependencyAnalysis.inferDecl? ``HelperProvider.HiddenBox
-  unless deps.proof == #[label "auto.type.source"] do
+  unless deps.statement == #[label "auto.type.source"] do
     throwError "Direct-only inference lost an inductive root's body"
 end
 
@@ -131,10 +131,11 @@ end
   let negative := #["policy.once", "policy.after_nested", "policy.disabled", "policy.not_enabled",
     "policy.none", "policy.statement.none", "policy.none.external", "policy.none.inline"]
   let expected := (positive.map fun labelText =>
-      { labelText, proof := #[useRef "auto.def.source" .automatic] : ExpectedUses }) ++
+      { labelText, statement := #[useRef "auto.def.source" .automatic] : ExpectedUses }) ++
     (negative.map fun labelText => { labelText : ExpectedUses }) ++ #[
       { labelText := "policy.statement", statement := #[useRef "auto.type.source" .automatic] },
-      { labelText := "policy.boundary", proof := #[useRef "auto.frontier.boundary" .automatic] }]
+      { labelText := "policy.boundary",
+        statement := #[useRef "auto.frontier.boundary" .automatic] }]
   let failures ← expectedUsesFailures expected
   unless failures.isEmpty do throwError "{failures}"
 
@@ -150,7 +151,7 @@ private def impls : ExtensionImpls := extension_impls%
           entry.label == label text && entry.facet == .statement)
         | throw <| IO.userError s!"Missing policy preview: {text}"
       let expected := if expands then #[dataUseRef "auto.def.source" .automatic] else #[]
-      unless entry.statementUses.isEmpty && entry.proofUses == expected do
+      unless entry.proofUses.isEmpty && entry.statementUses == expected do
         throw <| IO.userError s!"Expansion policy changed during export: {text}"
 
 end Verso.VersoBlueprintTests.BlueprintAutoDeps.ExpansionPolicy
